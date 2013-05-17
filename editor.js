@@ -23,12 +23,15 @@
 
     _.extend(Editor.prototype, {
         init: function() {
+            this.errorsBox.text("Loading ANGLE.js ...");
             this.angleLib = new Global.AngleLib();
             this.angleLib.on("completed", this.onAngleLoaded.bind(this));
             this.angleLib.load();
         },
 
         onAngleLoaded: function() {
+            this.errorsBox.text("ANGLE Loaded... Parsing ANGLE.JS...");
+            this.onInputBoxChanged();
             this.inputBox.on("keyup", this.onInputBoxChanged.bind(this));
         },
 
@@ -51,7 +54,7 @@
                             );
                     });
                 }
-                console.log(data);
+                self.generatedBox.val(data.source);
             });
         }
     });

@@ -41,11 +41,12 @@
         var SH_ACTIVE_UNIFORM_MAX_LENGTH = 0x8B87;
         var SH_ACTIVE_UNIFORMS = 0x8B86;
         var SH_ATTRIBUTES_UNIFORMS = 0x0008;
-        var SH_CSS_SHADERS_SPEC = 0x8B42
+        var SH_CSS_SHADERS_SPEC = 0x8B42;
         var SH_ESSL_OUTPUT = 0x8B45;
         var SH_FRAGMENT_SHADER = 0x8B30;
         var SH_INFO_LOG_LENGTH = 0x8B84;
         var SH_INTERMEDIATE_TREE = 0x0002;
+        var SH_GLSL_OUTPUT = 0x8B46;
         var SH_JS_OUTPUT = 0x8B48;
         var SH_OBJECT_CODE = 0x0004;
         var SH_OBJECT_CODE_LENGTH = 0x8B88;
@@ -54,12 +55,12 @@
 
         var types = {
             0: "none",
-            
+
             0x1406: "float",
             0x8B50: "vec2",
             0x8B51: "vec3",
             0x8B52: "vec4",
-            
+
             0x1404: "int",
             0x8B53: "ivec2",
             0x8B54: "ivec3",
@@ -87,8 +88,10 @@
         ShInitBuiltInResources(builtinResources);
 
         var compilers = {
-            "vertex": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, builtinResources),
-            "fragment": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, builtinResources)
+            "vertex.js": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, builtinResources),
+            "vertex": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, builtinResources),
+            "fragment.js": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, builtinResources),
+            "fragment": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, builtinResources)
         };
 
         function compile(type, shaderString) {
@@ -159,6 +162,9 @@
                         });
                     }
                 break;
+                case "start":
+                    // nop.
+                break;
                 default:
                     self.postMessage({
                         type: "error",
@@ -198,7 +204,7 @@
                     self.onWorkerMessage(ev);
                 };
                 // Start the worker.
-                self.worker.postMessage("");
+                self.worker.postMessage("start");
                 self.trigger("completed");
             };
             xhr.open("GET", this.angleJS);
