@@ -55,46 +55,46 @@
     function Editor(options) {
         _.extend(this, options);
         this.init();
+        this.previousCode = null;
     }
 
     _.extend(Editor.prototype, {
         init: function() {
-            this.errorsBox.text("Loading ANGLE.js ...");
+            this.infoBox.text("Loading ANGLE.js ...");
             this.angleLib = new Global.AngleLib();
             this.angleLib.on("completed", this.onAngleLoaded.bind(this));
             this.angleLib.load();
         },
 
         onAngleLoaded: function() {
-            this.errorsBox.text("ANGLE Loaded... Parsing ANGLE.JS...");
+            this.infoBox.text("ANGLE Loaded... Parsing ANGLE.JS...");
             this.onInputBoxChanged();
             this.inputBox.on("keyup", this.onInputBoxChanged.bind(this));
         },
 
         onInputBoxChanged: function() {
-            var self = this;
-            this.angleLib.shader("fragment", BlendingCodePrefix, BlendingCodeSufix, this.inputBox.val(), function(err, data) {
+            var self = this,
+                code = this.inputBox.val();
+            if (code == this.previousCode)
+                return;
+            this.previousCode = code;
+            self.infoBox.text("Compiling");
+            this.angleLib.shader("fragment", BlendingCodePrefix, BlendingCodeSufix, code, function(err, data) {
                 var newInputValue = self.inputBox.val();
                 if (data.cssShader.original != newInputValue) {
                     // Input changed while waiting for the second thread. Ignore the results.
                     return;
                 }
-                self.errorsBox.empty();
+                self.infoBox.text("Ready");
                 if (!data.cssShader.compileResult) {
                     // Had some errors while compiling.
-                    _.each(data.cssShader.errors, function(error) {
-                        self.errorsBox.append(
-                            $("<div class='error' />")
-                                .append($("<span class='badge' />").addClass(error.type.toLowerCase()))
-                                .append($("<span class='label' />").text(error.error))
-                            );
-                    });
-                    self.generatedBox.val("");
+                    self.generatedBox.val(data.cssShader.info);
+                    self.glslBox.val("");
+                    self.hlslBox.val("");
                 } else {
                     self.generatedBox.val(data.cssShader.source);
-                    console.log(data);
-                    self.glslBox.val(data.glslShader.compileResult ? data.glslShader.source : "");
-                    self.hlslBox.val(data.hlslShader.compileResult ? data.hlslShader.source : "");
+                    self.glslBox.val(data.glslShader.compileResult ? data.glslShader.source : data.glslShader.info);
+                    self.hlslBox.val(data.hlslShader.compileResult ? data.hlslShader.source : data.hlslShader.info);
                 }
                 
             });
@@ -110,7 +110,7 @@
             generatedBox: $("#generated-box"),
             glslBox: $("#glsl-box"),
             hlslBox: $("#hlsl-box"),
-            errorsBox: $("#errors-box")
+            infoBox: $("#info-box")
         });
     });
 })();

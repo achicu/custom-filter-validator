@@ -286,8 +286,6 @@
             if (!callback)
                 return;
             var result = data.result;
-            if (result.info && result.info.length)
-                result.errors = this.parseErrors(result.info);
             callback(null, result);
         },
 
