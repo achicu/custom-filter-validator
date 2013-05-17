@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="x-ua-compatible" content="ie=edge, chrome=1" />
+        <title>CSS Custom Filters Validator</title>
+        <style>
+#input-box, #generated-box {
+    float: left;
+    width: 300px;
+    height: 400px;
+    margin-right: 10px;
+}
+#errors-box {
+    clear: left;
+    margin-top: 10px;
+}
+        </style>
+
+    </head>
+    <body>
+ 
+        <script src="http://code.jquery.com/jquery-1.9.0.js"></script>
+        <script src="underscore-min.js"></script>
+        <script src="backbone-min.js"></script>
+        <script>
+            var Global = {};
+        </script>
+        <script src="angle_lib.js"></script>
+        <script src="editor.js"></script>
+
+
+        <textarea id="input-box">
+precision mediump float;
+uniform vec3 parameter;
+void main() {
+}</textarea>
+
+
+        <textarea id="generated-box"></textarea>
+        <div id="errors-box"></div>
+
+    </body>
+</html>
