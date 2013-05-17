@@ -47,6 +47,7 @@
         var SH_INFO_LOG_LENGTH = 0x8B84;
         var SH_INTERMEDIATE_TREE = 0x0002;
         var SH_GLSL_OUTPUT = 0x8B46;
+        var SH_HLSL_OUTPUT = 0x8B47;
         var SH_JS_OUTPUT = 0x8B48;
         var SH_OBJECT_CODE = 0x0004;
         var SH_OBJECT_CODE_LENGTH = 0x8B88;
@@ -92,10 +93,14 @@
         }
 
         var compilers = {
-            "vertex.js": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, getBuiltinResources()),
-            "vertex": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, getBuiltinResources()),
-            "fragment.js": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, getBuiltinResources()),
-            "fragment": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, getBuiltinResources())
+            //"css.vertex.js": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, getBuiltinResources()),
+            "css.vertex.glsl": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, getBuiltinResources()),
+            "webgl.vertex.glsl": ShConstructCompiler(SH_VERTEX_SHADER, SH_WEBGL_SPEC, SH_GLSL_OUTPUT, getBuiltinResources()),
+            "webgl.vertex.hlsl": ShConstructCompiler(SH_VERTEX_SHADER, SH_WEBGL_SPEC, SH_HLSL_OUTPUT, getBuiltinResources()),
+            //"css.fragment.js": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, getBuiltinResources()),
+            "css.fragment.glsl": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, getBuiltinResources()),
+            "webgl.fragment.glsl": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_WEBGL_SPEC, SH_GLSL_OUTPUT, getBuiltinResources()),
+            "webgl.fragment.hlsl": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_WEBGL_SPEC, SH_HLSL_OUTPUT, getBuiltinResources())
         };
 
         function compile(type, shaderString) {
@@ -175,8 +180,34 @@
                         });
                     }
                 break;
+                case "shader":
+                    try {
+                        var result = {
+                            cssShader: null,
+                            glslShader: null,
+                            hlslShader: null
+                        };
+                        result.cssShader = compile("css." + event.data.shaderType + ".glsl", event.data.source);
+                        if (result.cssShader.compileResult) {
+                            result.cssShader.source = event.data.prefix + result.cssShader.source + event.data.sufix;
+                            result.glslShader = compile("webgl." + event.data.shaderType + ".glsl", result.cssShader.source);
+                            result.hlslShader = compile("webgl." + event.data.shaderType + ".hlsl", result.cssShader.source);
+                        }
+                        self.postMessage({
+                            type: "result",
+                            result: result,
+                            callback: event.data.callback
+                        });
+                    } catch (e) {
+                        self.postMessage({
+                            type: "error",
+                            error: e ? e.toString() : "Undefined error",
+                            callback: event.data.callback
+                        });
+                    }
+                break;
                 case "start":
-                    // nop.
+                    self.postMessage({type: 'loaded'});
                 break;
                 default:
                     self.postMessage({
@@ -187,17 +218,15 @@
                     break;
             }
         };
-        self.postMessage({type: 'loaded'});
     }
 
     function AngleLib() {
         this.lastCallbackId = 0;
         this.callbacks = {};
-        this.queue = [];
     }
 
     _.extend(AngleLib.prototype, Backbone.Events, {
-        angleJS: "angle/angle.js",
+        angleJS: "angle/angle.closure.js",
 
         load: function() {
             if (this.loadStarted)
@@ -218,7 +247,7 @@
                 };
                 // Start the worker.
                 self.worker.postMessage({type: "start"});
-                self.trigger("completed");
+                self.trigger("downloaded");
             };
             xhr.open("GET", this.angleJS);
             xhr.send();
@@ -264,12 +293,7 @@
 
         onWorkerLoaded: function(data) {
             this.loaded = true;
-            var queue = this.queue,
-                self = this;
-            this.queue = null;
-            $.each(queue, function(i, item) {
-                self.compile(item.shaderType, item.source, item.callback);
-            });
+            this.trigger("completed");
         },
 
         onWorkerError: function(data) {
@@ -293,20 +317,21 @@
         },
 
         compile: function(type, source, callback) {
-            if (!this.loaded) {
-                this.queue.push({
-                    shaderType: type,
-                    source: source,
-                    callback: callback
-                });
-                if (!this.loadStarted)
-                    this.load();
-                return;
-            }
             this.worker.postMessage({
                 type: "compile",
                 shaderType: type,
                 source: source,
+                callback: this._registerCallback(callback)
+            });
+        },
+
+        shader: function(type, prefix, sufix, source, callback) {
+            this.worker.postMessage({
+                type: "shader",
+                shaderType: type,
+                source: source,
+                prefix: prefix,
+                sufix: sufix,
                 callback: this._registerCallback(callback)
             });
         }

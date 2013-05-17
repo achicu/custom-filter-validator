@@ -21,11 +21,13 @@ limitations under the License.
         <meta http-equiv="x-ua-compatible" content="ie=edge, chrome=1" />
         <title>CSS Custom Filters Validator</title>
         <style>
-#input-box, #generated-box {
+.code-box {
     float: left;
+    margin-right: 10px;
+}
+.code-box > textarea {
     width: 300px;
     height: 400px;
-    margin-right: 10px;
 }
 #errors-box {
     clear: left;
@@ -36,6 +38,37 @@ limitations under the License.
     </head>
     <body>
  
+        <h1> CSS Custom Filter validator </h1>
+
+        <h2> Fragment shader checker </h2>
+
+        <div class="code-box">
+            <h3>Input shader</h3>
+            <textarea id="input-box">
+precision mediump float;
+uniform vec3 parameter;
+void main() {
+    css_MixColor = vec4(parameter, 1.0);
+}</textarea>
+        </div>
+
+        <div class="code-box">
+            <h3>Validated GLSL</h3>
+            <textarea id="generated-box"></textarea>
+        </div>
+
+        <div class="code-box">
+            <h3>Actual GLSL</h3>
+            <textarea id="glsl-box"></textarea>
+        </div>
+
+        <div class="code-box">
+            <h3>Actual HLSL</h3>
+            <textarea id="hlsl-box"></textarea>
+        </div>
+
+        <div id="errors-box"></div>
+
         <script src="http://code.jquery.com/jquery-1.9.0.js"></script>
         <script src="underscore-min.js"></script>
         <script src="backbone-min.js"></script>
@@ -44,21 +77,5 @@ limitations under the License.
         </script>
         <script src="angle_lib.js"></script>
         <script src="editor.js"></script>
-
-<h1> CSS Custom Filter validator </h1>
-
-<h2> Fragment shader checker </h2>
-
-        <textarea id="input-box">
-precision mediump float;
-uniform vec3 parameter;
-void main() {
-    css_MixColor = vec4(parameter, 1.0);
-}</textarea>
-
-
-        <textarea id="generated-box"></textarea>
-        <div id="errors-box"></div>
-
     </body>
 </html>
