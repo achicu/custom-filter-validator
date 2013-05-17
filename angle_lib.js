@@ -84,14 +84,18 @@
         };
 
         ShInitialize();
-        var builtinResources = allocate(100 * 4, 'i8'); // big enough to cover for the size of ShBuiltInResources
-        ShInitBuiltInResources(builtinResources);
+
+        function getBuiltinResources() {
+            var builtinResources = allocate(100 * 4, 'i8'); // big enough to cover for the size of ShBuiltInResources
+            ShInitBuiltInResources(builtinResources);
+            return builtinResources;
+        }
 
         var compilers = {
-            "vertex.js": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, builtinResources),
-            "vertex": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, builtinResources),
-            "fragment.js": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, builtinResources),
-            "fragment": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, builtinResources)
+            "vertex.js": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, getBuiltinResources()),
+            "vertex": ShConstructCompiler(SH_VERTEX_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, getBuiltinResources()),
+            "fragment.js": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_JS_OUTPUT, getBuiltinResources()),
+            "fragment": ShConstructCompiler(SH_FRAGMENT_SHADER, SH_CSS_SHADERS_SPEC, SH_GLSL_OUTPUT, getBuiltinResources())
         };
 
         function compile(type, shaderString) {
@@ -109,25 +113,34 @@
                 uniforms: []
             };
 
+            setValue(strings, 0, 'i32');
             ShGetInfo(compiler, SH_OBJECT_CODE_LENGTH, strings);
             var length = getValue(strings, 'i32');
+
             var shaderResultStringPtr = allocate(length, 'i8', ALLOC_STACK);
             ShGetObjectCode(compiler, shaderResultStringPtr);
             result.source = length > 1 ? Pointer_stringify(shaderResultStringPtr, length - 1) : "";
 
+            setValue(strings, 0, 'i32');
             ShGetInfo(compiler, SH_INFO_LOG_LENGTH, strings);
             length = getValue(strings, 'i32');
+
             shaderResultStringPtr = allocate(length, 'i8', ALLOC_STACK);
             ShGetInfoLog(compiler, shaderResultStringPtr);
             result.info = length > 1 ? Pointer_stringify(shaderResultStringPtr, length - 1) : "";
 
+            setValue(strings, 0, 'i32');
             ShGetInfo(compiler, SH_ACTIVE_UNIFORMS, strings);
             var uniformsCount = getValue(strings, 'i32');
 
+            setValue(strings, 0, 'i32');
             ShGetInfo(compiler, SH_ACTIVE_UNIFORM_MAX_LENGTH, strings);
             var maxUnfiromNameLength = getValue(strings, 'i32');
             var uniformName = allocate(maxUnfiromNameLength, 'i8', ALLOC_STACK);
             for (var i = 0; i < uniformsCount; ++i) {
+                setValue(strings, 0, 'i32');
+                setValue(strings + 4, 0, 'i32');
+                setValue(strings + 8, 0, 'i32');
                 ShGetActiveUniform(compiler, i, strings, strings + 4, strings + 8, uniformName, 0);
                 var uniformNameLength = getValue(strings, 'i32');
                 var uniformType = getValue(strings + 8, 'i32');
@@ -184,7 +197,7 @@
     }
 
     _.extend(AngleLib.prototype, Backbone.Events, {
-        angleJS: "angle/angle.closure.js",
+        angleJS: "angle/angle.js",
 
         load: function() {
             if (this.loadStarted)
@@ -199,12 +212,12 @@
                 if (xhr.readyState != 4 || xhr.status != 200)
                     return;
                 var blob = new Blob([xhr.response, "\n(", WorkerInit.toString(), ")();"]);
-                self.worker = new Worker(webkitURL.createObjectURL(blob));
+                self.worker = new Worker(URL.createObjectURL(blob));
                 self.worker.onmessage = function(ev) {
                     self.onWorkerMessage(ev);
                 };
                 // Start the worker.
-                self.worker.postMessage("start");
+                self.worker.postMessage({type: "start"});
                 self.trigger("completed");
             };
             xhr.open("GET", this.angleJS);
